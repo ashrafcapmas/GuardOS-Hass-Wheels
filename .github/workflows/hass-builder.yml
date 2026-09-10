@@ -30,24 +30,32 @@ jobs:
           - os_name: ubuntu-24.04
             image: arm32v7/ubuntu:24.04
             hass_version: "2024.12.0"
-            build_ubuntu: true
           - os_name: alpine-latest
             image: arm32v7/alpine:latest
             hass_version: "2023.12.0"
-            build_alpine: true
-    
-    # تشغيل conditionally حسب الاختيار
-    if: |
-      github.event_name == 'schedule' ||
-      github.event.inputs.os_type == 'both' ||
-      (github.event.inputs.os_type == 'ubuntu-only' && matrix.os_name == 'ubuntu-24.04') ||
-      (github.event.inputs.os_type == 'alpine-only' && matrix.os_name == 'alpine-latest')
 
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
+      - name: Check if should build
+        id: check
+        run: |
+          OS_TYPE="${{ github.event.inputs.os_type || 'both' }}"
+          CURRENT_OS="${{ matrix.os_name }}"
+          
+          if [ "$OS_TYPE" = "both" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          elif [ "$OS_TYPE" = "ubuntu-only" ] && [ "$CURRENT_OS" = "ubuntu-24.04" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          elif [ "$OS_TYPE" = "alpine-only" ] && [ "$CURRENT_OS" = "alpine-latest" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build Wheels in Container
+        if: steps.check.outputs.should_build == 'true'
         run: |
           mkdir -p ${{ github.workspace }}/wheels
           
@@ -87,6 +95,7 @@ jobs:
             "
 
       - name: Upload Artifact
+        if: steps.check.outputs.should_build == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: hass-wheels-${{ matrix.os_name }}-armv7
