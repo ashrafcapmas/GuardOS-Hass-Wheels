@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: '0 0 1 * *'
 
+concurrency:
+  group: build-wheels
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build Wheels (${{ matrix.os_name }})
@@ -15,8 +19,10 @@ jobs:
         include:
           - os_name: ubuntu-24.04
             image: arm32v7/ubuntu:24.04
+            hass_version: "2024.12.0"
           - os_name: alpine-latest
             image: arm32v7/alpine:latest
+            hass_version: "2024.12.0"
 
     steps:
       - name: Set up QEMU
@@ -47,16 +53,14 @@ jobs:
                 fi
               fi
               
-              echo 'Fetching latest Home Assistant version...'
-              LATEST_VERSION=\$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r .info.version)
-              echo \"Building Home Assistant \$LATEST_VERSION for ${{ matrix.os_name }}...\"
+              echo 'Building Home Assistant ${{ matrix.hass_version }} for ${{ matrix.os_name }}...'
               
               mkdir -p /workspace/wheels
               python3 -m venv /workspace/venv
               . /workspace/venv/bin/activate
               
               pip install --upgrade pip wheel
-              pip wheel --wheel-dir=/workspace/wheels homeassistant==\$LATEST_VERSION
+              pip wheel --wheel-dir=/workspace/wheels homeassistant==${{ matrix.hass_version }}
               
               echo 'Creating final archive...'
               cd /workspace
