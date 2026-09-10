@@ -28,7 +28,7 @@ jobs:
 
       - name: Build Wheels in Container
         run: |
-          docker run --rm --platform linux/arm -v ${{ github.workspace }}:/workspace ${{ matrix.image }} /bin/sh -c "
+          docker run --rm --platform linux/arm/v7 -v ${{ github.workspace }}:/workspace ${{ matrix.image }} /bin/sh -c "
             set -e
             echo 'Installing build dependencies...'
             ${{ matrix.prepare_cmd }}
