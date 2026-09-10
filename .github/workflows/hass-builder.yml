@@ -2,11 +2,21 @@ name: Build HASS ARMv7 Wheels
 
 on:
   workflow_dispatch:
+    inputs:
+      os_type:
+        description: 'اختر نظام التشغيل'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - ubuntu-only
+          - alpine-only
   schedule:
     - cron: '0 0 1 * *'
 
 concurrency:
-  group: build-wheels
+  group: build-wheels-${{ github.event.inputs.os_type || 'both' }}
   cancel-in-progress: true
 
 jobs:
@@ -20,9 +30,18 @@ jobs:
           - os_name: ubuntu-24.04
             image: arm32v7/ubuntu:24.04
             hass_version: "2024.12.0"
+            build_ubuntu: true
           - os_name: alpine-latest
             image: arm32v7/alpine:latest
-            hass_version: "2024.12.0"
+            hass_version: "2023.12.0"
+            build_alpine: true
+    
+    # تشغيل conditionally حسب الاختيار
+    if: |
+      github.event_name == 'schedule' ||
+      github.event.inputs.os_type == 'both' ||
+      (github.event.inputs.os_type == 'ubuntu-only' && matrix.os_name == 'ubuntu-24.04') ||
+      (github.event.inputs.os_type == 'alpine-only' && matrix.os_name == 'alpine-latest')
 
     steps:
       - name: Set up QEMU
@@ -76,6 +95,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    if: always()
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
