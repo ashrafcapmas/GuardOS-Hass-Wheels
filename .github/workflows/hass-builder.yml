@@ -1,0 +1,73 @@
+name: Build HASS ARMv7 Wheels
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  build:
+    name: Build Wheels (${{ matrix.os_name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os_name: ubuntu-24.04
+            image: arm32v7/ubuntu:24.04
+            prepare_cmd: >
+              apt-get update && apt-get install -y python3 python3-pip python3-venv python3-dev build-essential libffi-dev libssl-dev libjpeg-dev zlib1g-dev rustc cargo tzdata jq curl wget
+          - os_name: alpine-latest
+            image: arm32v7/alpine:latest
+            prepare_cmd: >
+              apk update && apk add python3 py3-pip python3-dev gcc g++ musl-dev libffi-dev make cargo rust tzdata jpeg-dev zlib-dev jq curl wget
+
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build Wheels in Container
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/workspace ${{ matrix.image }} /bin/sh -c "
+            set -e
+            echo 'Installing build dependencies...'
+            ${{ matrix.prepare_cmd }}
+            
+            echo 'Fetching latest Home Assistant version...'
+            LATEST_VERSION=\$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r .info.version)
+            echo \"Building Home Assistant \$LATEST_VERSION for ${{ matrix.os_name }}...\"
+            
+            mkdir -p /workspace/wheels
+            python3 -m venv /workspace/venv
+            . /workspace/venv/bin/activate
+            
+            pip install --upgrade pip wheel
+            pip wheel --wheel-dir=/workspace/wheels homeassistant==\$LATEST_VERSION
+            
+            echo 'Creating final archive...'
+            cd /workspace
+            tar -czvf hass-wheels-${{ matrix.os_name }}-armv7.tar.gz -C /workspace/wheels .
+          "
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hass-wheels-${{ matrix.os_name }}-armv7
+          path: hass-wheels-${{ matrix.os_name }}-armv7.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Home Assistant Wheels
+          files: artifacts/**/*.tar.gz
+          make_latest: true
