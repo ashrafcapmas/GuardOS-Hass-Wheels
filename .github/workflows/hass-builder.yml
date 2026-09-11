@@ -13,9 +13,9 @@ on:
           - ubuntu-only
           - alpine-only
       hass_version:
-        description: 'إصدار Home Assistant (اكتب latest لأحدث إصدار، أو رقماً محدداً مثل 2024.12.4)'
+        description: 'إصدار Home Assistant (الإصدار المستقر والمتوافق مع Python 3.12)'
         required: true
-        default: 'latest'
+        default: '2025.1.0'
   schedule:
     - cron: '0 0 1 * *'
 
@@ -81,12 +81,7 @@ jobs:
                 fi
               fi
               
-              TARGET_VERSION=\"${{ github.event.inputs.hass_version || 'latest' }}\"
-              
-              if [ \"\$TARGET_VERSION\" = \"latest\" ]; then
-                echo 'Fetching latest Home Assistant version...'
-                TARGET_VERSION=\$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r .info.version)
-              fi
+              TARGET_VERSION=\"${{ github.event.inputs.hass_version || '2025.1.0' }}\"
               
               echo \"Building Home Assistant \$TARGET_VERSION for ${{ matrix.os_name }}...\"
               
