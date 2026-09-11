@@ -72,7 +72,7 @@ jobs:
                 if [ \"\$ID\" = \"alpine\" ]; then
                   echo 'Installing Alpine dependencies...'
                   apk update
-                  apk add python3 py3-pip python3-dev gcc g++ musl-dev libffi-dev make cargo rust tzdata jpeg-dev zlib-dev jq curl wget pkg-config cmake openssl-dev
+                  apk add --no-cache python3 py3-pip python3-dev gcc g++ musl-dev libffi-dev make cargo rust tzdata jpeg-dev zlib-dev jq curl wget pkgconfig cmake openssl-dev
                 else
                   echo 'Installing Ubuntu dependencies...'
                   apt-get update
