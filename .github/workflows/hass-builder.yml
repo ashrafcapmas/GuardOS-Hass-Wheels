@@ -72,11 +72,11 @@ jobs:
                 if [ \"\$ID\" = \"alpine\" ]; then
                   echo 'Installing Alpine dependencies...'
                   apk update
-                  apk add python3 py3-pip python3-dev gcc g++ musl-dev libffi-dev make cargo rust tzdata jpeg-dev zlib-dev jq curl wget
+                  apk add python3 py3-pip python3-dev gcc g++ musl-dev libffi-dev make cargo rust tzdata jpeg-dev zlib-dev jq curl wget pkg-config cmake openssl-dev
                 else
                   echo 'Installing Ubuntu dependencies...'
                   apt-get update
-                  apt-get install -y python3 python3-pip python3-venv python3-dev build-essential libffi-dev libssl-dev libjpeg-dev zlib1g-dev rustc cargo tzdata jq curl wget
+                  apt-get install -y python3 python3-pip python3-venv python3-dev build-essential libffi-dev libssl-dev libjpeg-dev zlib1g-dev rustc cargo tzdata jq curl wget pkg-config cmake
                 fi
               fi
               
