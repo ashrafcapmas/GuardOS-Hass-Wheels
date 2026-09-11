@@ -33,8 +33,8 @@ jobs:
         include:
           - os_name: ubuntu-24.04
             image: ubuntu:24.04
-          - os_name: alpine-3.20
-            image: alpine:3.20
+          - os_name: alpine-3.21
+            image: alpine:3.21
 
     steps:
       - name: Set up QEMU
@@ -50,7 +50,7 @@ jobs:
             echo "should_build=true" >> $GITHUB_OUTPUT
           elif [ "$OS_TYPE" = "ubuntu-only" ] && [ "$CURRENT_OS" = "ubuntu-24.04" ]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
-          elif [ "$OS_TYPE" = "alpine-only" ] && [ "$CURRENT_OS" = "alpine-3.20" ]; then
+          elif [ "$OS_TYPE" = "alpine-only" ] && [ "$CURRENT_OS" = "alpine-3.21" ]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
           else
             echo "should_build=false" >> $GITHUB_OUTPUT
@@ -83,7 +83,7 @@ jobs:
               
               TARGET_VERSION=\"${{ github.event.inputs.hass_version || '2025.1.0' }}\"
               
-              echo \"Building Home Assistant \$TARGET_VERSION for ${{ matrix.os_name }}...\"
+              echo \"Building Home Assistant \$TARGET_VERSION and missing libraries for ${{ matrix.os_name }}...\"
               
               mkdir -p /workspace/wheels
               
@@ -91,7 +91,9 @@ jobs:
               . /workspace/venv/bin/activate
               
               pip install --upgrade pip wheel
-              pip wheel --wheel-dir=/workspace/wheels homeassistant==\$TARGET_VERSION
+              
+              echo 'Downloading and building Hass along with missing dependencies (aiodns 4.0.4 and numpy)...'
+              pip wheel --wheel-dir=/workspace/wheels homeassistant==\$TARGET_VERSION aiodns==4.0.4 numpy
               
               echo 'Creating final archive...'
               cd /workspace
