@@ -93,7 +93,8 @@ jobs:
               pip install --upgrade pip wheel
               
               echo 'Downloading and building Hass along with missing dependencies (aiodns 4.0.4 and numpy)...'
-              pip wheel --wheel-dir=/workspace/wheels homeassistant==\$TARGET_VERSION aiodns==4.0.4 numpy
+              pip wheel --wheel-dir=/workspace/wheels homeassistant==\$TARGET_VERSION
+              pip wheel --wheel-dir=/workspace/wheels aiodns==4.0.4 numpy
               
               echo 'Creating final archive...'
               cd /workspace
