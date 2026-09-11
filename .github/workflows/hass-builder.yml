@@ -12,6 +12,10 @@ on:
           - both
           - ubuntu-only
           - alpine-only
+      hass_version:
+        description: 'إصدار Home Assistant (اكتب latest لأحدث إصدار، أو رقماً محدداً مثل 2024.12.4)'
+        required: true
+        default: 'latest'
   schedule:
     - cron: '0 0 1 * *'
 
@@ -28,11 +32,9 @@ jobs:
       matrix:
         include:
           - os_name: ubuntu-24.04
-            image: arm32v7/ubuntu:24.04
-            hass_version: "2024.12.0"
-          - os_name: alpine-latest
-            image: arm32v7/alpine:latest
-            hass_version: "2023.12.0"
+            image: ubuntu:24.04
+          - os_name: alpine-3.20
+            image: alpine:3.20
 
     steps:
       - name: Set up QEMU
@@ -48,7 +50,7 @@ jobs:
             echo "should_build=true" >> $GITHUB_OUTPUT
           elif [ "$OS_TYPE" = "ubuntu-only" ] && [ "$CURRENT_OS" = "ubuntu-24.04" ]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
-          elif [ "$OS_TYPE" = "alpine-only" ] && [ "$CURRENT_OS" = "alpine-latest" ]; then
+          elif [ "$OS_TYPE" = "alpine-only" ] && [ "$CURRENT_OS" = "alpine-3.20" ]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
           else
             echo "should_build=false" >> $GITHUB_OUTPUT
@@ -66,7 +68,6 @@ jobs:
             /bin/sh -c "
               set -e
               
-              # Install dependencies based on OS
               if [ -f /etc/os-release ]; then
                 . /etc/os-release
                 if [ \"\$ID\" = \"alpine\" ]; then
@@ -80,14 +81,22 @@ jobs:
                 fi
               fi
               
-              echo 'Building Home Assistant ${{ matrix.hass_version }} for ${{ matrix.os_name }}...'
+              TARGET_VERSION=\"${{ github.event.inputs.hass_version || 'latest' }}\"
+              
+              if [ \"\$TARGET_VERSION\" = \"latest\" ]; then
+                echo 'Fetching latest Home Assistant version...'
+                TARGET_VERSION=\$(curl -s https://pypi.org/pypi/homeassistant/json | jq -r .info.version)
+              fi
+              
+              echo \"Building Home Assistant \$TARGET_VERSION for ${{ matrix.os_name }}...\"
               
               mkdir -p /workspace/wheels
+              
               python3 -m venv /workspace/venv
               . /workspace/venv/bin/activate
               
               pip install --upgrade pip wheel
-              pip wheel --wheel-dir=/workspace/wheels homeassistant==${{ matrix.hass_version }}
+              pip wheel --wheel-dir=/workspace/wheels homeassistant==\$TARGET_VERSION
               
               echo 'Creating final archive...'
               cd /workspace
